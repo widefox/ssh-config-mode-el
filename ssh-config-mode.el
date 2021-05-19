@@ -2,27 +2,41 @@
 ;;
 ;; ssh-config-mode-el/ssh-config-mode.el ---
 ;;
-;; $Id: ssh-config-mode.el,v 1.14 2012/05/14 05:29:26 harley Exp $
-;;
 
 ;; Author:    Harley Gorrell <harley@panix.com>
 ;; URL:       https://github.com/jhgorrell/ssh-config-mode-el
+;; Package-Requires: ((emacs "24.3"))
 ;; Github:    https://raw.github.com/jhgorrell/ssh-config-mode-el/master/ssh-config-mode.el
 ;; License:   GPL v3+ (https://www.gnu.org/licenses/gpl-3.0.txt)
-;; Keywords:  ssh, config, emacs
-;; Version:   $Revision: 1.14 $
-;; Tag:       20170413T0010
+;; Keywords:  unix, faces, files
+;; Version:   1.15
+;; Tag:
 
 ;;; Commentary:
+;; Modified by Johnathon Weare jrweare@gmail.com
 ;; * Fontifys the ssh config keywords.
 ;; * keys for skipping from host section to host section.
 ;; * Add the following to your startup file.
 ;;   (autoload 'ssh-config-mode "ssh-config-mode" t)
 ;;   (add-to-list 'auto-mode-alist '("/\\.ssh/config\\'"     . ssh-config-mode))
 ;;   (add-to-list 'auto-mode-alist '("/sshd?_config\\'"      . ssh-config-mode))
-;;   (add-to-list 'auto-mode-alist '("/knownhosts\\'"       . ssh-known-hosts-mode))
-;;   (add-to-list 'auto-mode-alist '("/authorized_keys2?\\'" . ssh-authorized-keys-mode))
+;;   (add-to-list 'auto-mode-alist '("/knownhosts\\'"        . ssh-config-known-hosts-mode))
+;;   (add-to-list 'auto-mode-alist '("/ssh-known-hosts\\'"   . ssh-config-known-hosts-mode))
+;;   (add-to-list 'auto-mode-alist '("/authorized_keys2?\\'" . ssh-config-authorized-keys-mode))
 ;;   (add-hook 'ssh-config-mode-hook 'turn-on-font-lock)
+;;
+;; or for use-package
+;; (use-package ssh-config-mode
+;;   :mode (("/\\.ssh/config\\'"     . ssh-config-mode)
+;; 	 ("/sshd?_config\\'"      . ssh-config-mode)
+;; 	 ("/knownhosts\\'"        . ssh-config-known-hosts-mode)
+;; 	 ("/ssh-known-hosts\\'"   . ssh-config-known-hosts-mode)
+;; 	 ("/authorized_keys2?\\'" . ssh-config-authorized-keys-mode)
+;; 	 )
+;;   ; add these two lines if you don’t already turn on font-lock for all modes
+;;   ;:config
+;;   ;(add-hook 'ssh-config-mode-hook 'turn-on-font-lock)
+;;   )
 
 ;;; History:
 ;; * This keeps checkdoc happy.
@@ -226,80 +240,80 @@ Only show the first hostname in the menu.")
 (progn
   (add-to-list 'auto-mode-alist '("/\\.ssh/config\\'" . ssh-config-mode))
   (add-to-list 'auto-mode-alist '("/sshd?_config\\'" . ssh-config-mode))
-  (add-to-list 'auto-mode-alist '("/known_hosts\\'" . ssh-known-hosts-mode))
-  (add-to-list 'auto-mode-alist '("/authorized_keys\\'" . ssh-authorized-keys-mode)))
+  (add-to-list 'auto-mode-alist '("/known_hosts\\'" . ssh-config-known-hosts-mode))
+  (add-to-list 'auto-mode-alist '("/authorized_keys\\'" . ssh-config-authorized-keys-mode)))
 
 ;;;;;
 
-(defvar ssh-known-hosts-mode-hook nil
+(defvar ssh-config-known-hosts-mode-hook nil
   "*Hook to setup `ssh-config-mode'.")
 
-(defvar ssh-known-hosts-mode-map
+(defvar ssh-config-known-hosts-mode-map
   (let ((map (make-sparse-keymap)))
     ;; Ctrl bindings
     map)
-  "The local keymap for `ssh-known-hosts-mode'.")
+  "The local keymap for `ssh-config-known-hosts-mode'.")
 
-(defvar ssh-known-hosts-mode-syntax-table
+(defvar ssh-config-known-hosts-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?# "<" table)
     (modify-syntax-entry ?\n ">" table)
     table)
-  "Syntax table for `ssh-known-hosts-mode'.
+  "Syntax table for `ssh-config-known-hosts-mode'.
 Just sets the comment syntax.")
 
 ;;;;;
 
 ;; host.example.com,1.1.1.1
 ;; |1|hash=|hash=
-(defvar ssh-known-hosts-regex-hashed
+(defvar ssh-config-known-hosts-regex-hashed
   "\\(?:|[0-9]+|[-0-9A-Za-z=|/+]+\\)"
   "Regex for matching hashed addresses.")
 
-(defvar ssh-known-hosts-regex-ipv4
+(defvar ssh-config-known-hosts-regex-ipv4
   "\\(?:[0-9]+.[0-9]+.[0-9]+.[0-9]+\\)"
   "Regex for matching ipv4 addresses.")
 
-(defvar ssh-known-hosts-regex-ipv6
+(defvar ssh-config-known-hosts-regex-ipv6
   "\\(?:[0-9a-f:]+\\(?:%[a-z0-9]+\\)?\\)"
   "Regex for matching ipv6 addresses.")
 
-(defvar ssh-known-hosts-regex-ip
+(defvar ssh-config-known-hosts-regex-ip
   (concat
    "\\(?:"
-   ssh-known-hosts-regex-ipv4
+   ssh-config-known-hosts-regex-ipv4
    "\\|"
-   ssh-known-hosts-regex-ipv6
+   ssh-config-known-hosts-regex-ipv6
    "\\)")
   "Regex for matching ip addresses.")
 
-(defvar ssh-known-hosts-regex-ipv6
+(defvar ssh-config-known-hosts-regex-ipv6
   "\\(?:[0-9a-f:]+\\(?:%[a-z0-9]+\\)\\)"
   "Regex for matching ipv6 addresses.")
 
 ;; This is more specfic than "ssh-config-hostname-regexp"; merge them?
-(defvar ssh-known-hosts-regex-hostname
+(defvar ssh-config-known-hosts-regex-hostname
   "\\(?:\\(?:[a-zA-Z0-9_][-a-zA-Z0-9_]*[.]\\)*[a-zA-Z_][-a-zA-Z0-9_]*\\)"
   "Regex for matching hostnames.
 We permit underscores.")
 
 ;; :2222
-(defvar ssh-known-hosts-regex-port
+(defvar ssh-config-known-hosts-regex-port
   "\\(?:[0-9]+\\)"
   "Regex for matching an port.")
 
-(defvar ssh-known-hosts-regex-host
+(defvar ssh-config-known-hosts-regex-host
   (concat
    "\\(?:"
-   ssh-known-hosts-regex-hashed
+   ssh-config-known-hosts-regex-hashed
    "\\|"
-   ssh-known-hosts-regex-ip
+   ssh-config-known-hosts-regex-ip
    "\\|"
-   ssh-known-hosts-regex-hostname
+   ssh-config-known-hosts-regex-hostname
    "\\)"))
 
 ;; NOTE: font-lock-studio might be of help when making changes.
-(defvar ssh-known-hosts-font-lock-keywords
+(defvar ssh-config-known-hosts-font-lock-keywords
   ;; We want to match lines like the following:
   ;; Short list in ./tests/known_hosts_short
   ;; Full list in ./tests/known_hosts
@@ -314,30 +328,50 @@ We permit underscores.")
        "\\("
 
        ;; |1|hash=|hash=
-       ssh-known-hosts-regex-hashed
+       ssh-config-known-hosts-regex-hashed
        "\\|"
 
        ;; hostname-only
-       ssh-known-hosts-regex-hostname
+       ssh-config-known-hosts-regex-hostname
        "\\|"
 
        ;; ip-only
-       ssh-known-hosts-regex-ip
+       ssh-config-known-hosts-regex-ip
        "\\|"
 
        ;; hostname "," ip
-       "\\(?:" ssh-known-hosts-regex-hostname "," ssh-known-hosts-regex-ip "\\)"
+       "\\(?:" ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-ip "\\)"
+       "\\|"
+
+       ;; hostname "," hostname "," ip
+       "\\(?:" ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-ip "\\)"
+       "\\|"
+
+       ;; hostname "," ip "," hostname
+       "\\(?:" ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-ip "," ssh-config-known-hosts-regex-hostname "\\)"
+       "\\|"
+
+       ;;  ip "," hostname "," hostname
+       "\\(?:" ssh-config-known-hosts-regex-ip "," ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-hostname "\\)"
+       "\\|"
+
+       ;; ip "," ip "," hostname "," hostname
+       "\\(?:" ssh-config-known-hosts-regex-ip "," ssh-config-known-hosts-regex-ip "," ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-hostname "\\)"
+       "\\|"
+
+       ;; hostname "," hostname "," ip "," ip
+       "\\(?:" ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-hostname "," ssh-config-known-hosts-regex-ip "," ssh-config-known-hosts-regex-ip "\\)"
        "\\|"
 
        ;; [host-or-ip]:222
-       "\\(?:\\[" ssh-known-hosts-regex-host "\\]:" ssh-known-hosts-regex-port "\\)"
+       "\\(?:\\[" ssh-config-known-hosts-regex-host "\\]:" ssh-config-known-hosts-regex-port "\\)"
        "\\|"
 
        ;; We arent matching ports, but they should be the same.
        ;; [ssh.github.com]:443,[192.1.2.3]:443
        "\\(?:"
-       "\\[" ssh-known-hosts-regex-hostname "\\]:" ssh-known-hosts-regex-port ","
-       "\\[" ssh-known-hosts-regex-ip       "\\]:" ssh-known-hosts-regex-port "\\)"
+       "\\[" ssh-config-known-hosts-regex-hostname "\\]:" ssh-config-known-hosts-regex-port ","
+       "\\[" ssh-config-known-hosts-regex-ip       "\\]:" ssh-config-known-hosts-regex-port "\\)"
 
        "\\)"
        "[ \t]+"
@@ -356,34 +390,34 @@ We permit underscores.")
      (3 font-lock-keyword-face)
      (4 font-lock-string-face)
      ))
-  "Expressions to hilight in `ssh-known-hosts-mode'.
+  "Expressions to hilight in `ssh-config-known-hosts-mode'.
 We want to try and be a good match, so misformatted ones stand out.
 So we dont just match .* for the hostname.")
 
 ;;;###autoload
-(defun ssh-known-hosts-mode ()
+(defun ssh-config-known-hosts-mode ()
   "Major mode for fontifiying ssh known_hosts files.
-\\{ssh-known-hosts-mode}"
+\\{ssh-config-known-hosts-mode}"
   (interactive)
   (kill-all-local-variables)
-  (set-syntax-table ssh-known-hosts-mode-syntax-table)
+  (set-syntax-table ssh-config-known-hosts-mode-syntax-table)
   (setq
    mode-name "ssh-known-hosts"
-   major-mode 'ssh-known-hosts-mode
+   major-mode 'ssh-config-known-hosts-mode
    comment-start "#"
    comment-end   "")
-  (use-local-map ssh-known-hosts-mode-map)
+  (use-local-map ssh-config-known-hosts-mode-map)
   ;;
   (make-local-variable 'font-lock-defaults)
-  (setq font-lock-defaults '(ssh-known-hosts-font-lock-keywords))
+  (setq font-lock-defaults '(ssh-config-known-hosts-font-lock-keywords))
   ;;
-  (run-hooks 'ssh-known-hosts-mode-hook)
+  (run-hooks 'ssh-config-known-hosts-mode-hook)
   nil)
 
 ;;;;;
 
-;;;###autoload (autoload 'ssh-authorized-keys-mode "ssh-config-mode" nil t)
-(define-generic-mode ssh-authorized-keys-mode
+;;;###autoload (autoload 'ssh-config-authorized-keys-mode "ssh-config-mode" nil t)
+(define-generic-mode ssh-config-authorized-keys-mode
   '(?\#)
   nil
   (eval-when-compile
