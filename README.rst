@@ -20,6 +20,7 @@ It does the following:
     .ssh/config
     sshd?_config
     known_hosts
+    ssh-known-hosts
     authorized_keys2?
 
 If you have a SSH config file that you'd like to use this
@@ -66,3 +67,4 @@ Contributors
 - Александар Симић
 - Andrew Schwartzmeyer
 - Eder Elorriaga
+- Johnathon Weare
